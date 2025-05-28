@@ -83,11 +83,8 @@ export class TextureTools {
      */
     public renderDiffuseIBL(texture: BaseTexture): void {
         this._cdfGenerator.onGeneratedObservable.addOnce(() => {
-            this._cdfGenerator.findDominantDirection().then((direction) => {
-                this._iblDiffuseEffect.render(texture, this._cdfGenerator.getIcdfTexture());
-                this._blitCubeEffect.blit(this._iblDiffuseEffect.rtw, 0);
-                // TODO - Do something with the dominant direction
-            });
+            this._iblDiffuseEffect.render(texture, this._cdfGenerator.getIcdfTexture());
+            this._blitCubeEffect.blit(this._iblDiffuseEffect.rtw, 0);
         });
         this._cdfGenerator.iblSource = texture;
         this._cdfGenerator.renderWhenReady();

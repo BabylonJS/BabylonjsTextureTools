@@ -41,7 +41,7 @@ void main()
     }
     dir = normalize(dir);
 
-    vec3 integratedBRDF = irradiance(environmentMap, dir, textureInfo, icdf);
+    vec3 integratedBRDF = irradiance(environmentMap, dir, textureInfo, 0.0, vec3(1.0), dir, icdf);
 
     gl_FragColor = vec4(integratedBRDF, 1.);
 }
