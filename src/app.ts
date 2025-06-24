@@ -285,7 +285,7 @@ const loadFiles = function(event: any): void {
                     generateSpecularIBL();
                 }, () => {
                     console.log("Error loading HDR file");
-                }, false, generateIrradiance, generateIrradiance);
+                }, true, generateIrradiance, generateIrradiance);
                 return;
             }
             else if (extension === "jpg" || extension === "png") {
