@@ -1,7 +1,8 @@
 # This file is written to parse the BRDF sheen LUT from the C++ source of
 # "Practical Multiple-Scattering Sheen Using Linearly Transformed Cosines"
 # https://github.com/tizian/ltc-sheen?tab=readme-ov-file
-# LUT file: https://github.com/tizian/ltc-sheen/blob/master/fitting/python/data/ltc_table_sheen_volume.cpp
+# LUT file: https://github.com/MiiBond/ltc-sheen/blob/master/fitting/python/data/ltc_table_sheen_volume.cpp
+# LUT Generation Code: https://github.com/MiiBond/ltc-sheen/blob/master/fitting/src/bsdfs/sheen_volume.h
 #!/usr/bin/env python3
 """
 sheen_lut_to_datauri.py
