@@ -216,7 +216,7 @@ saveLTC.onclick = (): void => {
 renderAreaLightEmission.onclick = async (): Promise<void> => {
     if (emissionTexture) {
         await textureCanvas.renderAreaLightEmissionAsync(emissionTexture);
-        areaLightEmissionInviteText.innerText = "Rendering complete! You can now save the texture.";    
+        areaLightEmissionInviteText.innerText = "Rendering complete! You can now save the texture. This texture can be directly assigned to a RectAreaLight's 'emissiveTexture' property.";    
     }
 };
 
