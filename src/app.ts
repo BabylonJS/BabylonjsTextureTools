@@ -15,6 +15,7 @@ import("@babylonjs/core/Shaders/hdrFiltering.vertex");
 import("@babylonjs/core/Shaders/hdrFiltering.fragment");
 
 import "./ltc/ltcEffect";
+import { Texture } from "@babylonjs/core/Materials/Textures";
 
 
 // Custom types
@@ -74,6 +75,7 @@ let brdfMode = BRDFMode.CorrelatedGGXEnergieConservation;
 let brdfSheen = true;
 let cubeTexture: BaseTexture | undefined;
 let emissionTexture: BaseTexture | undefined;
+let emissionTextureResult: BaseTexture | undefined;
 let textureMode = TextureMode.ibl;
 
 // Switch IBL and BRDF mode
@@ -212,14 +214,20 @@ saveLTC.onclick = (): void => {
     renderLTCData();
 }
 
-renderAreaLightEmission.onclick = (): void => {
+renderAreaLightEmission.onclick = async (): Promise<void> => {
     if (emissionTexture) {
-        textureCanvas.renderAreaLightEmission(emissionTexture);
+        const result = await textureCanvas.renderAreaLightEmissionAsync(emissionTexture);
+
+        if (result) {
+            emissionTextureResult = result;
+            areaLightEmissionInviteText.innerText = "Rendering complete! You can now save the texture.";    
+        }
     }
 };
+
 saveAreaLightEmission.onclick = (): void => {
-    if (emissionTexture) {
-        textureCanvas.saveAreaLightEmission(emissionTexture);
+    if (emissionTextureResult) {
+        textureCanvas.saveAreaLightEmission(emissionTextureResult);
     }
 };
 
@@ -328,10 +336,8 @@ const loadFiles = function(event: any): void {
             else if (extension === "jpg" || extension === "png") {
                 if (textureMode === TextureMode.areaLightEmission && extension === "png") {
                     FilesInputStore.FilesToLoad[name] = file;
-                    import("@babylonjs/core/Materials/Textures/texture").then((textureModule) => {
-                        emissionTexture = new textureModule.Texture("file:" + name, textureCanvas.engine, true, false, undefined, () => {
-                            areaLightEmissionInviteText.innerText = "Texture loaded! Use the Render and Save buttons below.";
-                        });
+                    emissionTexture = new Texture("file:" + name, textureCanvas.engine, false, false, Texture.TRILINEAR_SAMPLINGMODE, () => {
+                        areaLightEmissionInviteText.innerText = "Texture loaded! Use the Render and Save buttons below.";
                     });
                     return;
                 }

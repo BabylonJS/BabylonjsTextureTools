@@ -1,38 +1,42 @@
 import { EffectWrapper, EffectRenderer } from "@babylonjs/core/Materials/effectRenderer";
 import { ThinEngine } from "@babylonjs/core/Engines/thinEngine";
-import { Constants } from "@babylonjs/core/Engines/constants";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import { RenderTargetWrapper } from "@babylonjs/core/Engines/renderTargetWrapper";
 import { BaseTexture } from "@babylonjs/core/Materials/Textures/baseTexture";
+import { AreaLightTextureTools } from "@babylonjs/core/Misc/areaLightsTextureTools";
+import { Nullable } from "@babylonjs/core/types";
 
 import "@babylonjs/core/Engines/Extensions/engine.renderTarget";
 
-import { BlitEffect } from "../blit/blitEffect";
-
 export class AreaLightEmissionEffect {
-    public readonly rtw: RenderTargetWrapper;
-
-    private readonly _size: number;
     private readonly _engine: ThinEngine;
     private readonly _effectRenderer: EffectRenderer;
-    private readonly _blitEffect: BlitEffect;
+    private readonly _blitEffectWrapper: EffectWrapper;
+    private readonly _areaLightTextureTools: AreaLightTextureTools;
+    private readonly _rtw: RenderTargetWrapper;
 
-    constructor(engine: ThinEngine, effectRenderer: EffectRenderer, size = 256) {
-        this._size = size;
+    constructor(engine: ThinEngine, effectRenderer: EffectRenderer) {
         this._engine = engine;
         this._effectRenderer = effectRenderer;
-        this._blitEffect = new BlitEffect(this._engine, this._effectRenderer);
-
-        this.rtw = this._createRenderTarget(size);
+        this._areaLightTextureTools = new AreaLightTextureTools(engine);
+        this._blitEffectWrapper = this._createEffect();
+        this._rtw = this._engine.createRenderTargetTexture({ width: 1024, height: 1024 }, {});
     }
 
-    public render(texture?: BaseTexture): void {
-        // TODO: Implement area light emission rendering logic
-        console.log("Area Light Emission render called - implementation needed", texture);
+    public async renderAsync(texture?: BaseTexture): Promise<Nullable<BaseTexture>> {
+        if (texture) {
+            const result = await this._areaLightTextureTools.processAsync(texture);
+            this._blitEffectWrapper.effect.setTexture("textureSampler", result);
+            this._engine.bindFramebuffer(this._rtw);
+            this._engine.setSize(1024, 1024);
+            this._effectRenderer.render(this._blitEffectWrapper, this._rtw);
+            return result;
+        }
+
+        return null;
     }
 
     public save(texture?: BaseTexture): void {
-        // TODO: Implement area light emission saving logic
         const canvas = this._engine.getRenderingCanvas();
         if (canvas) {
             Tools.ToBlob(canvas, (blob) => {
@@ -43,41 +47,29 @@ export class AreaLightEmissionEffect {
         }
     }
 
-    private _createRenderTarget(size: number): RenderTargetWrapper {
-        return this._engine.createRenderTargetTexture(
-            { width: size, height: size },
-            {
-                generateMipMaps: false,
-                generateDepthBuffer: false,
-                generateStencilBuffer: false,
-                type: Constants.TEXTURETYPE_UNSIGNED_INT,
-                format: Constants.TEXTUREFORMAT_RGBA,
-                samplingMode: Constants.TEXTURE_NEAREST_SAMPLINGMODE
-            }
-        );
-    }
-
-    private _getEffect(): EffectWrapper {
-        // TODO: Implement shader effect creation
-        // For now, return a basic effect wrapper
-        return new EffectWrapper({
-            engine: this._engine,
-            fragmentShader: `
-                precision highp float;
-                void main() {
-                    // Placeholder implementation - outputs red color
-                    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-                }
-            `,
-            vertexShader: `
-                attribute vec3 position;
-                void main() {
-                    gl_Position = vec4(position, 1.0);
-                }
-            `,
-            attributeNames: ["position"],
+    private _createEffect(): EffectWrapper {
+        const engine = this._engine;
+        const effectWrapper = new EffectWrapper({
+            engine: engine,
+            name: "BlitTexture",
+            useShaderStore: true,
             uniformNames: [],
-            samplerNames: []
+            samplerNames: ["textureSampler"],
+            defines: [],
+            fragmentShader: `
+            #ifdef GL_ES
+            precision highp float;
+            #endif
+
+            varying vec2 vUV;
+            uniform sampler2D textureSampler;
+
+            void main(void) {
+                gl_FragColor = texture2D(textureSampler, vUV);
+            }
+        `
         });
+
+        return effectWrapper;
     }
 }
