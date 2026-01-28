@@ -331,7 +331,12 @@ const loadFiles = function(event: any): void {
                     FilesInputStore.FilesToLoad[name] = file;
                     emissionTexture = new Texture("file:" + name, textureCanvas.engine, false, false, Texture.TRILINEAR_SAMPLINGMODE, () => {
                         areaLightEmissionInviteText.innerText = "Texture loaded! Use the Render and Save buttons below.";
+                        
+                        if (emissionTexture) {
+                            textureCanvas.showEmissionLightTexture(emissionTexture);
+                        }
                     });
+                   
                     return;
                 }
                 

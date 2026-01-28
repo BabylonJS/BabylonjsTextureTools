@@ -33,6 +33,11 @@ export class AreaLightEmissionEffect {
         }
     }
 
+    public showTexture(texture: BaseTexture): void {
+        this._blitEffectWrapper.effect.setTexture("textureSampler", texture);
+        this._effectRenderer.render(this._blitEffectWrapper, this.rtw);
+    }
+
     public save(texture?: BaseTexture): void {
         const canvas = this._engine.getRenderingCanvas();
         if (canvas) {
