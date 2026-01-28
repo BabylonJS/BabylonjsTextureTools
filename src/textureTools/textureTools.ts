@@ -83,8 +83,9 @@ export class TextureTools {
     /**
      * Renders our Area Light Emission texture.
      */
-    public async renderAreaLightEmissionAsync(texture?: BaseTexture): Promise<Nullable<BaseTexture>> {
-        return this._areaLightEmissionEffect.renderAsync(texture);
+    public async renderAreaLightEmissionAsync(texture?: BaseTexture): Promise<void> {
+        await this._areaLightEmissionEffect.renderAsync(texture);
+        this._blitEffect.blit(this._areaLightEmissionEffect.rtw, false);
     }
     
     /**
@@ -92,6 +93,7 @@ export class TextureTools {
      */
     public saveAreaLightEmission(texture?: BaseTexture): void {
         this._areaLightEmissionEffect.save(texture);
+        this._blitEffect.blit(this._areaLightEmissionEffect.rtw, false);
     }
 
     /**

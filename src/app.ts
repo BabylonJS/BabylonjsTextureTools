@@ -75,7 +75,6 @@ let brdfMode = BRDFMode.CorrelatedGGXEnergieConservation;
 let brdfSheen = true;
 let cubeTexture: BaseTexture | undefined;
 let emissionTexture: BaseTexture | undefined;
-let emissionTextureResult: BaseTexture | undefined;
 let textureMode = TextureMode.ibl;
 
 // Switch IBL and BRDF mode
@@ -216,19 +215,13 @@ saveLTC.onclick = (): void => {
 
 renderAreaLightEmission.onclick = async (): Promise<void> => {
     if (emissionTexture) {
-        const result = await textureCanvas.renderAreaLightEmissionAsync(emissionTexture);
-
-        if (result) {
-            emissionTextureResult = result;
-            areaLightEmissionInviteText.innerText = "Rendering complete! You can now save the texture.";    
-        }
+        await textureCanvas.renderAreaLightEmissionAsync(emissionTexture);
+        areaLightEmissionInviteText.innerText = "Rendering complete! You can now save the texture.";    
     }
 };
 
 saveAreaLightEmission.onclick = (): void => {
-    if (emissionTextureResult) {
-        textureCanvas.saveAreaLightEmission(emissionTextureResult);
-    }
+    textureCanvas.saveAreaLightEmission();
 };
 
 iblDiffuse.onclick = (): void => {
