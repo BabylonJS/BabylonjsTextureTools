@@ -15,6 +15,7 @@ import("@babylonjs/core/Shaders/hdrFiltering.vertex");
 import("@babylonjs/core/Shaders/hdrFiltering.fragment");
 
 import "./ltc/ltcEffect";
+import { Texture } from "@babylonjs/core/Materials/Textures";
 
 
 // Custom types
@@ -22,7 +23,8 @@ const enum TextureMode {
     brdf,
     ibl,
     iblsh,
-    ltc
+    ltc,
+    areaLightEmission
 }
 
 // Find our elements
@@ -34,8 +36,11 @@ const iblInvite = document.getElementById("iblInvite") as HTMLCanvasElement;
 const iblInviteText = document.getElementById("iblInviteText") as HTMLCanvasElement;
 const ltcInvite = document.getElementById("ltcInvite") as HTMLCanvasElement;
 const ltcInviteText = document.getElementById("ltcInviteText") as HTMLCanvasElement;
+const areaLightEmissionInvite = document.getElementById("areaLightEmissionInvite") as HTMLCanvasElement;
+const areaLightEmissionInviteText = document.getElementById("areaLightEmissionInviteText") as HTMLCanvasElement;
 const brdfTools = document.getElementById("brdfTools") as HTMLCanvasElement;
 const ltcTools = document.getElementById("ltcTools") as HTMLCanvasElement;
+const areaLightEmissionTools = document.getElementById("areaLightEmissionTools") as HTMLCanvasElement;
 
 const iblFooter = document.getElementById("iblFooter") as HTMLDivElement;
 const correlatedEC = document.getElementById("correlatedEC") as HTMLElement;
@@ -44,8 +49,11 @@ const uncorrelated = document.getElementById("uncorrelated") as HTMLElement;
 const toggleSheen = document.getElementById("toggleSheen") as HTMLElement;
 const saveBRDF = document.getElementById("saveBRDF") as HTMLElement;
 const saveLTC  = document.getElementById("saveLTC") as HTMLElement;
+const renderAreaLightEmission = document.getElementById("renderAreaLightEmission") as HTMLElement;
+const saveAreaLightEmission = document.getElementById("saveAreaLightEmission") as HTMLElement;
 
 const ltcFooter = document.getElementById("ltcFooter") as HTMLDivElement;
+const areaLightEmissionFooter = document.getElementById("areaLightEmissionFooter") as HTMLDivElement;
 const brdfFooter = document.getElementById("brdfFooter") as HTMLDivElement;
 const iblDiffuse = document.getElementById("iblDiffuse") as HTMLElement;
 const iblSpecular0 = document.getElementById("iblSpecular0") as HTMLElement;
@@ -66,12 +74,14 @@ new Scene(textureCanvas.engine);
 let brdfMode = BRDFMode.CorrelatedGGXEnergieConservation;
 let brdfSheen = true;
 let cubeTexture: BaseTexture | undefined;
+let emissionTexture: BaseTexture | undefined;
 let textureMode = TextureMode.ibl;
 
 // Switch IBL and BRDF mode
 const setMode = (mode: TextureMode): void => {
     iblInvite.style.display = "none";
     ltcInvite.style.display = "none";
+    areaLightEmissionInvite.style.display = "none";
 
     textureMode = mode;
 
@@ -79,7 +89,8 @@ const setMode = (mode: TextureMode): void => {
         case TextureMode.brdf:
             headerTitle.innerText = "BRDF";
             iblFooter.style.display = "none";
-            ltcFooter.style.display = "none"
+            ltcFooter.style.display = "none";
+            areaLightEmissionFooter.style.display = "none";
             brdfFooter.style.display = "block";
             break;
         case TextureMode.ibl:
@@ -87,6 +98,7 @@ const setMode = (mode: TextureMode): void => {
             iblFooter.style.display = "block";
             brdfFooter.style.display = "none";
             ltcFooter.style.display = "none";
+            areaLightEmissionFooter.style.display = "none";
             iblInvite.style.display = "block";
             iblInviteText.innerText = "Drag and drop an hdr file here to start processing.";
             break;
@@ -96,6 +108,7 @@ const setMode = (mode: TextureMode): void => {
             iblFooter.style.display = "block";
             brdfFooter.style.display = "none";
             ltcFooter.style.display = "none";
+            areaLightEmissionFooter.style.display = "none";
             iblInvite.style.display = "block";
             iblInviteText.innerText = "Drag and drop an hdr file here to start processing.";
             break;
@@ -105,8 +118,19 @@ const setMode = (mode: TextureMode): void => {
             iblFooter.style.display = "none";
             brdfFooter.style.display = "none";
             ltcFooter.style.display = "block";
+            areaLightEmissionFooter.style.display = "none";
             ltcInviteText.innerText = "Click to generate LTC data";
             ltcInvite.style.display = "block";
+            break;
+        case TextureMode.areaLightEmission:
+            textureCanvas.clear();
+            headerTitle.innerText = "Area Light Emission";
+            iblFooter.style.display = "none";
+            brdfFooter.style.display = "none";
+            ltcFooter.style.display = "none";
+            areaLightEmissionFooter.style.display = "block";
+            areaLightEmissionInvite.style.display = "block";
+            areaLightEmissionInviteText.innerText = "Drag and drop a PNG texture that you wish to use for emission in RectAreaLight.";
             break;
     }
 }
@@ -161,6 +185,9 @@ iblSHTools.onclick = (): void => {
 ltcTools.onclick = (): void => {
     setMode(TextureMode.ltc)
 }
+areaLightEmissionTools.onclick = (): void => {
+    setMode(TextureMode.areaLightEmission);
+}
 
 correlatedEC.onclick = (): void => {
     brdfMode = BRDFMode.CorrelatedGGXEnergieConservation;
@@ -185,6 +212,17 @@ saveBRDF.onclick = (): void => {
 saveLTC.onclick = (): void => {
     renderLTCData();
 }
+
+renderAreaLightEmission.onclick = async (): Promise<void> => {
+    if (emissionTexture) {
+        await textureCanvas.renderAreaLightEmissionAsync(emissionTexture);
+        areaLightEmissionInviteText.innerText = "Rendering complete! You can now save the texture. This texture can be directly assigned to a RectAreaLight's 'emissiveTexture' property.";    
+    }
+};
+
+saveAreaLightEmission.onclick = (): void => {
+    textureCanvas.saveAreaLightEmission();
+};
 
 iblDiffuse.onclick = (): void => {
     if (cubeTexture) {
@@ -289,6 +327,19 @@ const loadFiles = function(event: any): void {
                 return;
             }
             else if (extension === "jpg" || extension === "png") {
+                if (textureMode === TextureMode.areaLightEmission && extension === "png") {
+                    FilesInputStore.FilesToLoad[name] = file;
+                    emissionTexture = new Texture("file:" + name, textureCanvas.engine, false, false, Texture.TRILINEAR_SAMPLINGMODE, () => {
+                        areaLightEmissionInviteText.innerText = "Texture loaded! Use the Render and Save buttons below.";
+                        
+                        if (emissionTexture) {
+                            textureCanvas.showEmissionLightTexture(emissionTexture);
+                        }
+                    });
+                   
+                    return;
+                }
+                
                 const indexPX = name.indexOf("_px");
                 if (indexPX > -1) {
                     for (let j = 0; j < files.length; j++) {
@@ -306,7 +357,11 @@ const loadFiles = function(event: any): void {
             }
         }
 
-        iblInviteText.innerText = "No Texture to process. Try with an HDR file."
+        if (textureMode === TextureMode.areaLightEmission) {
+            areaLightEmissionInviteText.innerText = "No PNG texture to process. Try with a PNG file.";
+        } else {
+            iblInviteText.innerText = "No Texture to process. Try with an HDR file.";
+        }
     }
 }
 
@@ -335,3 +390,9 @@ iblInvite.addEventListener("drop", _dropHandler, false);
 iblInviteText.addEventListener("dragenter", _dragEnterHandler, false);
 iblInviteText.addEventListener("dragover", _dragOverHandler, false);
 iblInviteText.addEventListener("drop", _dropHandler, false);
+areaLightEmissionInvite.addEventListener("dragenter", _dragEnterHandler, false);
+areaLightEmissionInvite.addEventListener("dragover", _dragOverHandler, false);
+areaLightEmissionInvite.addEventListener("drop", _dropHandler, false);
+areaLightEmissionInviteText.addEventListener("dragenter", _dragEnterHandler, false);
+areaLightEmissionInviteText.addEventListener("dragover", _dragOverHandler, false);
+areaLightEmissionInviteText.addEventListener("drop", _dropHandler, false);

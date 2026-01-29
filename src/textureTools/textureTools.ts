@@ -10,6 +10,7 @@ import { BRDFEffect, BRDFMode } from "../brdf/brdfEffect";
 import { IBLDiffuseEffect } from "../ibl/iblDiffuseEffect";
 import { IBLSpecularEffect } from "../ibl/iblSpecularEffect";
 import { LTCEffect } from "../ltc/ltcEffect";
+import { AreaLightEmissionEffect } from "../emission/areaLightEmissionEffect";
 import { Nullable } from "@babylonjs/core/types";
 
 export interface BRDFOptions {
@@ -33,6 +34,7 @@ export class TextureTools {
     private readonly _iblDiffuseEffect: IBLDiffuseEffect;
     private readonly _iblSpecularEffect: IBLSpecularEffect;
     private readonly _ltcEffect: LTCEffect;
+    private readonly _areaLightEmissionEffect: AreaLightEmissionEffect;
     private readonly _cdfGenerator: IblCdfGenerator;
 
     /**
@@ -49,6 +51,7 @@ export class TextureTools {
         this._iblDiffuseEffect = new IBLDiffuseEffect(this.engine, this._renderer);
         this._iblSpecularEffect = new IBLSpecularEffect(this.engine, this._renderer);
         this._ltcEffect =  new LTCEffect(64, 32, 0.0001);
+        this._areaLightEmissionEffect = new AreaLightEmissionEffect(this.engine, this._renderer);
         this._cdfGenerator = new IblCdfGenerator(this.engine);
         this._brdfEffect = new BRDFEffect(this.engine, this._renderer);
     }
@@ -66,7 +69,6 @@ export class TextureTools {
      */
     public saveBRDF(mode: BRDFMode, sheen: boolean): void {
         this._brdfEffect.save(mode, sheen);
-
         this._blitEffect.blit(this._brdfEffect.rtw);
     }
     
@@ -76,6 +78,27 @@ export class TextureTools {
 
     public saveLTC(ltc: Float32Array) : void {
         this._ltcEffect.save(ltc);
+    }
+
+    public showEmissionLightTexture(texture: BaseTexture): void {
+        this._areaLightEmissionEffect.showTexture(texture);
+        this._blitEffect.blit(this._areaLightEmissionEffect.rtw, true);
+    }
+
+    /**
+     * Renders our Area Light Emission texture.
+     */
+    public async renderAreaLightEmissionAsync(texture?: BaseTexture): Promise<void> {
+        await this._areaLightEmissionEffect.renderAsync(texture);
+        this._blitEffect.blit(this._areaLightEmissionEffect.rtw, true);
+    }
+    
+    /**
+     * Saves our Area Light Emission texture.
+     */
+    public saveAreaLightEmission(texture?: BaseTexture): void {
+        this._areaLightEmissionEffect.save(texture);
+        this._blitEffect.blit(this._areaLightEmissionEffect.rtw, true);
     }
 
     /**
@@ -102,7 +125,6 @@ export class TextureTools {
      */
     public saveSpecularIBL(texture: BaseTexture, size: number): void {
         this._iblSpecularEffect.save(texture, size);
-
         this._blitCubeEffect.blit(this._iblSpecularEffect.rtw, 0);
     }
 
